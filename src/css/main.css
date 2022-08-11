@@ -1,0 +1,11 @@
+body {
+    background: grey;
+}
+.block {
+    /*display: block;*/
+    width: 250px;
+}
+.block input {
+    display: inline-block;
+    /*max-width: 70px;*/
+}
