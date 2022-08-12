@@ -4,16 +4,18 @@ const employees = [
     {id: 103, name: 'Farkas Bela', bithDate: '2005.11.02.', osszMunka: '', hetvegiPotlek: ''},
     {id: 104, name: 'Virag Hajnalka', bithDate: '1998.06.04.', osszMunka: '', hetvegiPotlek: ''},
     {id: 105, name: 'Piros Ilona', bithDate: '2004.02.10.', osszMunka: '', hetvegiPotlek: ''},
+    {id: 106, name: 'Geza ', bithDate: '2010.07.22.', osszMunka: '', hetvegiPotlek: ''},
 ];
 
 const tableRows = [
     {
         text: 'ID',
-        value: 'id'
+        value: 'id',
     },
     {
         text: 'Nev',
         value: 'name',
+        class: 'text-center minWidth200'
     },
     {
         text: 'Osszes munkaido',
@@ -28,30 +30,31 @@ const tableRows = [
 
 let napok = {};
 
-let workingHouses = {};
+let workingHours = {};
 
 const dayOfTheWeek = [
+    {name: 'Vasarnap', short: 'V'},
     {name: 'Hetfo', short: 'H'},
     {name: 'Kedd', short: 'K'},
-    {name: 'Szerda', short: 'Sz'},
+    {name: 'Szerda', short: 'Szs'},
     {name: 'Csutortok', short: 'Cs'},
     {name: 'Pentek', short: 'P'},
     {name: 'Szombat', short: 'Sz'},
-    {name: 'Vasarnap', short: 'V'},
 ];
-
 
 const renderTable = () => {
     let munkaidoTabla = document.createElement('table');
     munkaidoTabla.id = 'munkaidoTabla';
     document.getElementById('root').appendChild(munkaidoTabla);
 
-
     const tr_fejlec = addTableElement('tr', munkaidoTabla, '');
+    tr_fejlec.classList.add('fejlec');
     // const munkaidoTabla = document.getElementById('munkaidoTabla');
     tableRows.map((tableRow) => {
-        if (tableRow.text) {
-            addTableElement('th', tr_fejlec, tableRow.text);
+        let elem = addTableElement('th', tr_fejlec, tableRow.text)
+        if (tableRow.value !== 'id') {
+            elem.classList.add('text-center', 'minWidth200');
+
         }
     })
 
@@ -60,14 +63,14 @@ const renderTable = () => {
     employees.map((employee) => {
         let tr_munkas = document.createElement('tr');
         tr_munkas.id = `employee_${employee.id}`;
-
+        tr_munkas.classList.add('munkasSor');
         addTableElement('td', tr_munkas, employee.id);
-        addTableElement('td', tr_munkas, employee.name);
+        addTableElement('td', tr_munkas, employee.name).classList.add('minWidth300');
 
         munkaidoTabla.appendChild(tr_munkas);
 
         const extraFields = [
-            {name: 'Osszes munkaido', short: 'osszesMunkaido', value: 2400},
+            {name: 'Osszes munkaido', short: 'osszesMunkaido', value: 0},
             {name: 'hetvegi potlek', short: 'hetvegiPotlek', value: 0},
         ];
 
@@ -77,9 +80,11 @@ const renderTable = () => {
         // let blockId = `${employee.id}_${dayOfTheWeek[getNthDay(i).getDay()].short}`;
         // td.id = blockId;
 
-        for (const key in workingHouses[employee.id]) {
+
+        for (const key in workingHours[employee.id]) {
             let td = document.createElement('td');
             td.id = key;
+            td.classList.add('inputContainer');
             let kezdInput = document.createElement('input');
             kezdInput.name = "kezdInput";
             let vegInput = document.createElement('input');
@@ -91,7 +96,8 @@ const renderTable = () => {
             kezdInput.onchange = vegInput.onchange = (e) => changeTime(e, key, document.getElementById(key), employee.id, {
                 kezdInput,
                 vegInput,
-                idoSpan
+                idoSpan,
+                isWeekend: workingHours[employee.id][key]['isWeekend']
             });
 
             td.appendChild(kezdInput);
@@ -100,8 +106,6 @@ const renderTable = () => {
             tr_munkas.appendChild(td);
         }
     });
-    console.log(workingHouses);
-
 }
 
 const addTableElement = (type, place, text, options = {}, id = null) => {
@@ -116,38 +120,43 @@ const addTableElement = (type, place, text, options = {}, id = null) => {
 }
 
 const calcDaysOfTheWeek = (place, numberOfDays = 7) => {
-
-
     for (let i = 0; i < numberOfDays; i++) {
-        let currentDate = getNthDay(i);
+        let currentDate = new Date();
         let th = document.createElement('th', {});
-
+        currentDate.setDate(currentDate.getDate() + i);
         napok[currentDate.getDate()] = {
             month: currentDate.getMonth() + 1,
             day: currentDate.getDate(),
             dayName: dayOfTheWeek[currentDate.getDay()].short,
         };
+
+        let isWeekend = ['Sz', 'V'].includes(dayOfTheWeek[currentDate.getDay()].short);
         employees.map(employee => {
-            workingHouses[employee.id] = workingHouses[employee.id] ?? {};
-            workingHouses[employee.id][currentDate.getDate().toString()] = workingHouses[employee.id][currentDate.getDate()] ?? {};
-            workingHouses[employee.id][currentDate.getDate().toString()] = {
+            workingHours[employee.id] = workingHours[employee.id] ?? {};
+            workingHours[employee.id][currentDate.getDate().toString()] = workingHours[employee.id][currentDate.getDate()] ?? {};
+            workingHours[employee.id][currentDate.getDate().toString()] = {
                 kezd: 0,
                 veg: 0,
-                ido: 0
+                ido: 0,
+                isWeekend: isWeekend,
             };
         });
-
-
         th.id = dayOfTheWeek[currentDate.getDay()].short;
         th.innerHTML = `${currentDate.getMonth() + 1}.${currentDate.getDate()}. ${dayOfTheWeek[currentDate.getDay()].short}`;
 
+        let thContainer = document.createElement('td');
+        thContainer.classList.add('grid')
+        th.appendChild(thContainer);
         // tableRows.find(x => x.dates).dates.map((data) => {
-        //     addTableElement('td', th, data.text, {});
+        addTableElement('span', thContainer, 'kezd', {});
+        addTableElement('span', thContainer, 'veg', {});
+        addTableElement('span', thContainer, 'ido', {});
         // })
-        if ([5, 6].includes(currentDate.getDay())) {
+        if (isWeekend) {
             th.classList.add("weekend");
         }
         place.appendChild(th);
+
     }
 }
 
@@ -174,7 +183,7 @@ const calcMunkaido = (id = 0, kezd = '0:00', veg = '7:00') => {
     return hourDiff + ":" + minutesDiff;
 }
 
-const calcEmployeeAge = (id = 103) => {
+const calcEmployeeAge = (id) => {
     let today = new Date();
 
     let employee = employees.find(x => x.id === id);
@@ -189,38 +198,50 @@ const calcEmployeeAge = (id = 103) => {
 
 renderTable();
 
-const changeTime = (e, day, block, employeeID, {kezdInput, vegInput, idoSpan}) => {
-
-    // calcOsszmunka(employeeID);
-    workingHouses[employeeID][day]['kezd'] = kezdInput.value;
-    workingHouses[employeeID][day]['veg'] = vegInput.value;
+const changeTime = (e, day, block, employeeID, {kezdInput, vegInput, idoSpan, isWeekend}) => {
+    workingHours[employeeID][day]['kezd'] = kezdInput.value;
+    workingHours[employeeID][day]['veg'] = vegInput.value;
     let allFilled = !!(kezdInput.value && vegInput.value);
+    let row = document.querySelector(`#employee_${employeeID}`);
+
     if (allFilled) {
         let ido = calcMunkaido(0, kezdInput.value, vegInput.value);
-        workingHouses[employeeID][day]['ido'] = ido;
+        workingHours[employeeID][day]['ido'] = ido;
         idoSpan.innerHTML = formatTime(getTimeInMins(ido));
-        calcOsszmunka(employeeID)
+        if (isWeekend && calcEmployeeAge(employeeID) < 18) {
+            calcHetvegiPotlek(employeeID, ido, row);
+        }
+        calcOsszmunka(employeeID, row)
     }
 }
 
-const calcOsszmunka = (employeeID) => {
-    let workingHourSumm = 0;
-    let workingHousesInMin = 0;
-    for (const date in workingHouses[employeeID]) {
-        if (workingHouses[employeeID][date]['ido']) {
-            workingHousesInMin += getTimeInMins(workingHouses[employeeID][date]['ido'].toString());
-            console.log(workingHousesInMin);
-
+const calcHetvegiPotlek = (employeeID, ido, row) => {
+    let hetvegiPotlekMin = 0;
+    for (const date in workingHours[employeeID]) {
+        let workingHour = workingHours[employeeID][date];
+        if (workingHour['ido'] && workingHour['isWeekend']) {
+            hetvegiPotlekMin += getTimeInMins(workingHour['ido'].toString()) / 2;
         }
-        // workingHourSumm += workingHouses[employeeID][date].ido;
     }
+    let hetvegiPotlek = formatTime(hetvegiPotlekMin);
 
-    workingHourSumm = formatTime(workingHousesInMin);
+    console.log(hetvegiPotlek);
+    employees.find(employee => employee.id === employeeID).hetvegiPotlek = hetvegiPotlek;
+    row.querySelector("#hetvegiPotlek").innerHTML = hetvegiPotlek;
+
+}
+
+const calcOsszmunka = (employeeID, row) => {
+    let workingHoursInMin = 0;
+    for (const date in workingHours[employeeID]) {
+        if (workingHours[employeeID][date]['ido']) {
+            workingHoursInMin += getTimeInMins(workingHours[employeeID][date]['ido'].toString());
+        }
+    }
+    let workingHourSumm = formatTime(workingHoursInMin);
     employees.find(x => x.id === employeeID)['osszMunka'] = workingHourSumm;
-    // let row = document.querySelector(`#employee_${employeeID}`);
-    document.querySelector(`#employee_${employeeID}`).
-        // row.
-    querySelector("#osszesMunkaido").innerHTML = workingHourSumm;
+    // let row = document.querySelector(`#employee_${employeeID}`);     // row.
+    row.querySelector("#osszesMunkaido").innerHTML = workingHourSumm;
 }
 
 const getTimeInMins = (time) => {
